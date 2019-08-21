@@ -1,0 +1,191 @@
+﻿@page "/"
+@using Soccer.Contracts.Interfaces;
+@using Soccer.Contracts.Models;
+
+
+@inject IStatsProvider StatsProvider;
+@inject ITeamsProvider TeamsProvider;
+
+<div class="row">
+    <div class="col-md-2">
+        <MatAutocomplete Collection="@Teams" ItemType="string" Label="Team 1" ValueChanged="@((v)=> team1 = v)"></MatAutocomplete>
+    </div>
+
+    <div class="col-md-2">
+        <MatAutocomplete Collection="@Teams" ItemType="string" Label="Team 2" ValueChanged="@((v)=> team2 = v)"></MatAutocomplete>
+    </div>
+
+    <div class="col-md-2">
+        <MatButton Style="margin-top: 10px;" Disabled="!CanSearch" Outlined="true" Icon="@MatIconNames.Search" OnClick="@(()=>GetStats(team1, team2))">Get Stats</MatButton>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        @if (ShowStats)
+        {
+
+            @if (WinningStats != null)
+            {
+                <h1>Overall Winning Stats</h1>
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Team</th>
+                            <th>Wins</th>
+                            <th>Plays</th>
+                            <th>% Wins</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var stat in WinningStats)
+                        {
+                            <tr>
+                                <td>
+                                    @stat.TeamName
+                                </td>
+                                <td>
+                                    @stat.NoOfWins
+                                </td>
+                                <td>
+                                    @stat.NoOfGames
+                                </td>
+                                <td>
+                                    @string.Format("{0:f2} %", (double)stat.NoOfWins / stat.NoOfGames * 100)
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                <hr />
+            }
+
+
+            if (Summary.Any())
+            {
+
+                <h1>Teams Match Summary</h1>
+
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            @foreach (var key in Summary.Keys)
+                            {
+                                <th>@string.Format("{0}", key.Equals("D") ? "Draw" : key)</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            @foreach (var value in Summary.Values)
+                            {
+                                <td>
+                                    @value
+                                </td>
+                            }
+                        </tr>
+                    </tbody>
+                </table>
+
+                <hr />
+            }
+
+            if (Stats.Any())
+            {
+                <h1>Matches</h1>
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Home Team</th>
+                            <th>Away Team</th>
+                            <th>Winner</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Stats)
+                        {
+                            <tr>
+                                <td>@string.Format("{0} ({1})", item.HomeTeam, item.FTHG)</td>
+                                <td>@string.Format("{0} ({1})", item.AwayTeam, item.FTAG)</td>
+                                <td>@item.Winner</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+
+
+        }
+
+        @if (NoStats)
+        {
+            <div class="alert alert-primary" role="alert">
+                No Matches found for teams
+            </div>
+        }
+    </div>
+</div>
+
+
+
+@code{
+
+    List<string>
+    Teams = new List<string>
+        ();
+    List<Stat>
+        Stats;
+    List<WinningStat>
+        WinningStats;
+    Dictionary<string, int>
+        Summary = new Dictionary<string, int>
+            ();
+
+
+    bool ShowStats => Stats != null;
+    bool NoStats => ShowStats && !Stats.Any();
+
+    string team1 = "";
+    string team2 = "";
+    bool CanSearch => !string.IsNullOrEmpty(team1) && !string.IsNullOrEmpty(team2) && team1 != team2;
+
+    void GetStats(string team1, string team2)
+    {
+        var statsTask = StatsProvider.GetStatsAsync(team1, team2).ContinueWith(s =>
+        {
+            Stats = s.Result;
+
+            Summary = new Dictionary<string, int>
+                ();
+            foreach (var stat in Stats)
+            {
+                if (Summary.ContainsKey(stat.Winner)) Summary[stat.Winner]++;
+                else Summary[stat.Winner] = 1;
+            }
+
+            StateHasChanged();
+
+        }, TaskScheduler.FromCurrentSynchronizationContext());
+
+
+        var winningStatsTaks = StatsProvider.GetWinningStatsAsync(team1, team2).ContinueWith(ws =>
+        {
+            WinningStats = ws.Result;
+
+            StateHasChanged();
+
+        }, TaskScheduler.FromCurrentSynchronizationContext());
+
+
+
+
+    }
+
+
+    protected async override Task OnInitializedAsync()
+    {
+        var teams = await TeamsProvider.GetTeamsAsync();
+        Teams = teams.OrderBy(t => t.Name).Select(t => t.Name).ToList();
+    }
+}
