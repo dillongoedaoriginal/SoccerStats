@@ -1,10 +1,5 @@
 ﻿@page "/"
-@using Soccer.Contracts.Interfaces;
-@using Soccer.Contracts.Models;
-
-
-@inject IStatsProvider StatsProvider;
-@inject ITeamsProvider TeamsProvider;
+@inherits IndexBase
 
 <div class="row">
     <div class="col-md-2">
@@ -126,66 +121,3 @@
         }
     </div>
 </div>
-
-
-
-@code{
-
-    List<string>
-    Teams = new List<string>
-        ();
-    List<Stat>
-        Stats;
-    List<WinningStat>
-        WinningStats;
-    Dictionary<string, int>
-        Summary = new Dictionary<string, int>
-            ();
-
-
-    bool ShowStats => Stats != null;
-    bool NoStats => ShowStats && !Stats.Any();
-
-    string team1 = "";
-    string team2 = "";
-    bool CanSearch => !string.IsNullOrEmpty(team1) && !string.IsNullOrEmpty(team2) && team1 != team2;
-
-    void GetStats(string team1, string team2)
-    {
-        var statsTask = StatsProvider.GetStatsAsync(team1, team2).ContinueWith(s =>
-        {
-            Stats = s.Result;
-
-            Summary = new Dictionary<string, int>
-                ();
-            foreach (var stat in Stats)
-            {
-                if (Summary.ContainsKey(stat.Winner)) Summary[stat.Winner]++;
-                else Summary[stat.Winner] = 1;
-            }
-
-            StateHasChanged();
-
-        }, TaskScheduler.FromCurrentSynchronizationContext());
-
-
-        var winningStatsTaks = StatsProvider.GetWinningStatsAsync(team1, team2).ContinueWith(ws =>
-        {
-            WinningStats = ws.Result;
-
-            StateHasChanged();
-
-        }, TaskScheduler.FromCurrentSynchronizationContext());
-
-
-
-
-    }
-
-
-    protected async override Task OnInitializedAsync()
-    {
-        var teams = await TeamsProvider.GetTeamsAsync();
-        Teams = teams.OrderBy(t => t.Name).Select(t => t.Name).ToList();
-    }
-}
