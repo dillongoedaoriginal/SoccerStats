@@ -12,7 +12,7 @@ namespace Data
         {
         }
 
-        public async Task<List<Team>> GetTeamsAsync()
+        public async Task<List<Team>> GetTeamsAsync(string name = "*")
         {
             return await SoccerContext.Teams.FromSqlRaw("SELECT DISTINCT \"HomeTeam\" AS \"Name\" FROM public.\"Stats\"").ToListAsync();
         }

@@ -1,17 +1,52 @@
 ﻿@page "/"
 @inherits IndexBase
+@using Blazored.Typeahead.Forms
+@using Soccer.Contracts.Models;
+@using Blazored.Typeahead
 
 <div class="row">
     <div class="col-md-2">
-        <MatAutocomplete Collection="@Teams" ItemType="string" Label="Team 1" ValueChanged="@((v)=> team1 = v)"></MatAutocomplete>
+        <EditForm Model="@Team1FormModel">
+            <BlazoredTypeahead SearchMethod="@SearchTeams"
+                               @bind-Value="@Team1FormModel.Team"
+                               Placeholder="Team 1"
+                               Debounce="500">
+                <SelectedTemplate Context="team">
+                    @team.Name
+                </SelectedTemplate>
+                <ResultTemplate Context="team">
+                    @team.Name
+                </ResultTemplate>
+                <NotFoundTemplate>
+                   No Teams found
+                </NotFoundTemplate>
+            </BlazoredTypeahead>
+            <ValidationMessage For="@(() => Team1FormModel.Team)" />
+        </EditForm>
     </div>
 
     <div class="col-md-2">
-        <MatAutocomplete Collection="@Teams" ItemType="string" Label="Team 2" ValueChanged="@((v)=> team2 = v)"></MatAutocomplete>
+        <EditForm Model="@Team2FormModel">
+            <BlazoredTypeahead SearchMethod="@SearchTeams"
+                               @bind-Value="@Team2FormModel.Team"
+                               Placeholder="Team 2"
+                               Debounce="500">
+                <SelectedTemplate Context="team">
+                    @team.Name
+                </SelectedTemplate>
+                <ResultTemplate Context="team">
+                    @team.Name
+                </ResultTemplate>
+                <NotFoundTemplate>
+                    Sorry, there weren't any search results.
+                </NotFoundTemplate>
+            </BlazoredTypeahead>
+            <ValidationMessage For="@(() => Team2FormModel.Team)" />
+        </EditForm>
     </div>
 
     <div class="col-md-2">
-        <MatButton Style="margin-top: 10px;" Disabled="!CanSearch" Outlined="true" Icon="@MatIconNames.Search" OnClick="@(()=>GetStats(team1, team2))">Get Stats</MatButton>
+        <MatButton Disabled="!CanSearch" Outlined="true" Icon="@MatIconNames.Search" OnClick="@(()=>GetStats(Team1FormModel.Team.Name, Team2FormModel.Team.Name))">Get Stats</MatButton>
     </div>
 </div>
 
@@ -111,6 +146,10 @@
             }
 
 
+        }
+        else if (isLoadingStats)
+        {
+            <h1>Loading...</h1>
         }
 
         @if (NoStats)

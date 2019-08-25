@@ -14,11 +14,17 @@ namespace Soccer.Providers
         {
         }
 
-        public async Task<List<Team>> GetTeamsAsync()
+        public async Task<List<Team>> GetTeamsAsync(string search = "*")
         {
             var req = new GraphQLRequest
             {
-                Query = @"{teams{name}}"
+                Query = @"
+query Teams($search : String){
+  teams(search : $search){
+    name
+  }
+}",
+                Variables = new { search }
             };
 
 

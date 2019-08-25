@@ -6,6 +6,6 @@ namespace Soccer.Contracts.Interfaces
 {
     public interface ITeamsProvider
     {
-        Task<List<Team>> GetTeamsAsync();
+        Task<List<Team>> GetTeamsAsync(string search = "*");
     }
 }
